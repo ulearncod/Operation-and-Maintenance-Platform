@@ -33,6 +33,40 @@ def get_db():
 
 async def init_db():
     """初始化数据库"""
+    # 导入模型以注册到元数据
+    from app.models import auth  # noqa: F401
+
     # 创建所有表
     Base.metadata.create_all(bind=engine)
-    print("✅ 数据库初始化完成")
+
+    # 基础数据：默认角色与管理员账号
+    from app.models.auth import Role, User, UserRole
+    from app.core.security import get_password_hash
+
+    db = SessionLocal()
+    try:
+        # 确保基础角色存在
+        for role_name in ["admin", "user"]:
+            if not db.query(Role).filter(Role.name == role_name).first():
+                db.add(Role(name=role_name))
+        db.commit()
+
+        # 创建默认管理员（仅首次）
+        if not db.query(User).filter(User.username == "admin").first():
+            admin = User(
+                username="admin",
+                email="admin@example.com",
+                password_hash=get_password_hash("admin123"),
+                is_active=True,
+            )
+            db.add(admin)
+            db.commit()
+            db.refresh(admin)
+
+            admin_role = db.query(Role).filter(Role.name == "admin").first()
+            if admin_role:
+                db.add(UserRole(user_id=admin.id, role_id=admin_role.id))
+                db.commit()
+        print("✅ 数据库初始化完成（角色/管理员已就绪）")
+    finally:
+        db.close()

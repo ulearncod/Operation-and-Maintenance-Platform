@@ -13,6 +13,9 @@ import Resources from './pages/Resources';
 import Kubernetes from './pages/Kubernetes';
 import Alerts from './pages/Alerts';
 import Settings from './pages/Settings';
+import Login from './pages/Login';
+import ProtectedRoute from './components/ProtectedRoute';
+import { isAuthenticated, removeToken } from './services/auth';
 
 const { Header, Sider, Content } = Layout;
 
@@ -95,8 +98,16 @@ const App: React.FC = () => {
             }}>
               运维平台监控系统
             </div>
-            <div style={{ color: '#666' }}>
-              v1.0.0
+            <div style={{ color: '#666', display: 'flex', gap: 12, alignItems: 'center' }}>
+              <span>v1.0.0</span>
+              {isAuthenticated() ? (
+                <button
+                  onClick={() => { removeToken(); window.location.href = '/login'; }}
+                  style={{ border: '1px solid #ddd', padding: '4px 8px', borderRadius: 4, cursor: 'pointer' }}
+                >
+                  退出登录
+                </button>
+              ) : null}
             </div>
           </Header>
           <Content
@@ -109,11 +120,12 @@ const App: React.FC = () => {
             }}
           >
             <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/resources" element={<Resources />} />
-              <Route path="/kubernetes" element={<Kubernetes />} />
-              <Route path="/alerts" element={<Alerts />} />
-              <Route path="/settings" element={<Settings />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/resources" element={<ProtectedRoute><Resources /></ProtectedRoute>} />
+              <Route path="/kubernetes" element={<ProtectedRoute><Kubernetes /></ProtectedRoute>} />
+              <Route path="/alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             </Routes>
           </Content>
         </Layout>

@@ -3,7 +3,7 @@ API v1 路由配置
 """
 
 from fastapi import APIRouter
-from app.api.api_v1.endpoints import monitoring, metrics, summary, prometheus
+from app.api.api_v1.endpoints import monitoring, metrics, summary, prometheus, auth
 
 api_router = APIRouter()
 
@@ -33,4 +33,11 @@ api_router.include_router(
     prometheus.router,
     prefix="/prometheus",
     tags=["Prometheus"]
+)
+
+# 认证与授权
+api_router.include_router(
+    auth.router,
+    prefix="/auth",
+    tags=["认证"]
 )

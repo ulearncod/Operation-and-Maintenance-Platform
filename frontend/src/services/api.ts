@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getToken, removeToken } from './auth';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
@@ -13,7 +14,11 @@ const api = axios.create({
 // 请求拦截器
 api.interceptors.request.use(
   (config) => {
-    // 可以在这里添加认证token
+    const token = getToken();
+    if (token) {
+      config.headers = config.headers || {};
+      (config.headers as any)['Authorization'] = `Bearer ${token}`;
+    }
     return config;
   },
   (error) => {
@@ -28,6 +33,12 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
+    if (error?.response?.status === 401) {
+      removeToken();
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
     console.error('API Error:', error);
     return Promise.reject(error);
   }
