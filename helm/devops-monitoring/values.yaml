@@ -1,0 +1,134 @@
+# 全局配置
+global:
+  namespace: monitoring
+  imageRegistry: ""
+
+# 监控服务配置
+monitoringService:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: devops-platform/monitoring-service
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8000
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  env:
+    DATABASE_URL: "postgresql://user:password@postgres:5432/monitoring"
+    REDIS_URL: "redis://redis:6379/0"
+    LOG_LEVEL: "INFO"
+
+# Prometheus配置
+prometheus:
+  enabled: true
+  server:
+    persistentVolume:
+      enabled: true
+      size: 50Gi
+    resources:
+      requests:
+        memory: "1Gi"
+        cpu: "500m"
+      limits:
+        memory: "2Gi"
+        cpu: "1000m"
+    retention: "30d"
+  nodeExporter:
+    enabled: true
+  kubeStateMetrics:
+    enabled: true
+
+# Grafana配置
+grafana:
+  enabled: true
+  adminPassword: "prom-operator"
+  persistence:
+    enabled: true
+    size: 10Gi
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "200m"
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+      - name: 'default'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/default
+  dashboards:
+    default:
+      system-overview:
+        gnetId: 0
+        revision: 1
+        datasource: Prometheus
+      kubernetes-overview:
+        gnetId: 0
+        revision: 1
+        datasource: Prometheus
+
+# AlertManager配置
+alertmanager:
+  enabled: true
+  persistentVolume:
+    enabled: true
+    size: 10Gi
+  config:
+    global:
+      smtp_smarthost: 'localhost:587'
+      smtp_from: 'alertmanager@devops-platform.com'
+    route:
+      group_by: ['alertname']
+      group_wait: 10s
+      group_interval: 10s
+      repeat_interval: 1h
+      receiver: 'web.hook'
+    receivers:
+    - name: 'web.hook'
+      webhook_configs:
+      - url: 'http://monitoring-service:8000/api/v1/alerts/webhook'
+        send_resolved: true
+
+# Ingress配置
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+  hosts:
+    - host: monitoring.local
+      paths:
+        - path: /grafana
+          pathType: Prefix
+          service:
+            name: grafana
+            port:
+              number: 3000
+        - path: /prometheus
+          pathType: Prefix
+          service:
+            name: prometheus-server
+            port:
+              number: 80
+        - path: /api
+          pathType: Prefix
+          service:
+            name: monitoring-service
+            port:
+              number: 8000

@@ -1,0 +1,168 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: devops-platform-rules
+  namespace: monitoring
+  labels:
+    app: prometheus
+    role: alert-rules
+spec:
+  groups:
+  - name: system.rules
+    rules:
+    # CPU告警规则
+    - alert: HighCPUUsage
+      expr: 100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "CPU使用率过高"
+        description: "节点 {{ $labels.instance }} 的CPU使用率超过80%，当前值: {{ $value }}%"
+
+    - alert: CriticalCPUUsage
+      expr: 100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 95
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: "CPU使用率严重过高"
+        description: "节点 {{ $labels.instance }} 的CPU使用率超过95%，当前值: {{ $value }}%"
+
+    # 内存告警规则
+    - alert: HighMemoryUsage
+      expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "内存使用率过高"
+        description: "节点 {{ $labels.instance }} 的内存使用率超过85%，当前值: {{ $value }}%"
+
+    - alert: CriticalMemoryUsage
+      expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 95
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: "内存使用率严重过高"
+        description: "节点 {{ $labels.instance }} 的内存使用率超过95%，当前值: {{ $value }}%"
+
+    # 磁盘告警规则
+    - alert: HighDiskUsage
+      expr: (node_filesystem_size_bytes - node_filesystem_avail_bytes) / node_filesystem_size_bytes * 100 > 85
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "磁盘使用率过高"
+        description: "节点 {{ $labels.instance }} 的磁盘使用率超过85%，当前值: {{ $value }}%"
+
+    - alert: CriticalDiskUsage
+      expr: (node_filesystem_size_bytes - node_filesystem_avail_bytes) / node_filesystem_size_bytes * 100 > 95
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: "磁盘使用率严重过高"
+        description: "节点 {{ $labels.instance }} 的磁盘使用率超过95%，当前值: {{ $value }}%"
+
+    # 网络告警规则
+    - alert: HighNetworkErrors
+      expr: rate(node_network_receive_errs_total[5m]) + rate(node_network_transmit_errs_total[5m]) > 10
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "网络错误率过高"
+        description: "节点 {{ $labels.instance }} 的网络错误率过高，当前值: {{ $value }}"
+
+    # 系统负载告警规则
+    - alert: HighLoadAverage
+      expr: node_load1 > 4
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "系统负载过高"
+        description: "节点 {{ $labels.instance }} 的1分钟负载平均值过高，当前值: {{ $value }}"
+
+    # 进程告警规则
+    - alert: TooManyProcesses
+      expr: node_procs_running > 200
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "运行进程数过多"
+        description: "节点 {{ $labels.instance }} 的运行进程数过多，当前值: {{ $value }}"
+
+  - name: kubernetes.rules
+    rules:
+    # Pod告警规则
+    - alert: PodCrashLooping
+      expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Pod重启循环"
+        description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} 在15分钟内重启了 {{ $value }} 次"
+
+    - alert: PodNotReady
+      expr: kube_pod_status_phase{phase!="Running",phase!="Succeeded"} > 0
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Pod未就绪"
+        description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} 状态为 {{ $labels.phase }}"
+
+    # 节点告警规则
+    - alert: NodeNotReady
+      expr: kube_node_status_condition{condition="Ready",status="true"} == 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "节点未就绪"
+        description: "节点 {{ $labels.node }} 未就绪"
+
+    - alert: NodeMemoryPressure
+      expr: kube_node_status_condition{condition="MemoryPressure",status="true"} == 1
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "节点内存压力"
+        description: "节点 {{ $labels.node }} 存在内存压力"
+
+    - alert: NodeDiskPressure
+      expr: kube_node_status_condition{condition="DiskPressure",status="true"} == 1
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "节点磁盘压力"
+        description: "节点 {{ $labels.node }} 存在磁盘压力"
+
+  - name: application.rules
+    rules:
+    # 应用告警规则
+    - alert: ApplicationDown
+      expr: up{job="monitoring-service"} == 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "监控服务不可用"
+        description: "监控服务 {{ $labels.instance }} 不可用"
+
+    - alert: HighHTTPErrorRate
+      expr: rate(http_requests_total{status_code=~"5.."}[5m]) > 0.1
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "HTTP错误率过高"
+        description: "服务 {{ $labels.instance }} 的HTTP错误率过高，当前值: {{ $value }}"

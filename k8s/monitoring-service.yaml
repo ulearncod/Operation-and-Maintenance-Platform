@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: monitoring-service
+  namespace: monitoring
+  labels:
+    app: monitoring-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: monitoring-service
+  template:
+    metadata:
+      labels:
+        app: monitoring-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/api/v1/metrics/prometheus"
+    spec:
+      containers:
+      - name: monitoring-service
+        image: devops-platform/monitoring-service:latest
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://user:password@postgres:5432/monitoring"
+        - name: REDIS_URL
+          value: "redis://redis:6379/0"
+        - name: LOG_LEVEL
+          value: "INFO"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: monitoring-service
+  namespace: monitoring
+  labels:
+    app: monitoring-service
+spec:
+  selector:
+    app: monitoring-service
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 8000
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ServiceMonitor
+metadata:
+  name: monitoring-service
+  namespace: monitoring
+  labels:
+    app: monitoring-service
+spec:
+  selector:
+    matchLabels:
+      app: monitoring-service
+  endpoints:
+  - port: http
+    path: /api/v1/metrics/prometheus
+    interval: 10s

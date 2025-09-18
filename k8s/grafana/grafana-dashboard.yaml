@@ -1,0 +1,333 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-system
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  system-overview.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "系统资源监控概览",
+        "tags": ["system", "monitoring"],
+        "style": "dark",
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "CPU使用率",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+                "legendFormat": "CPU使用率 %",
+                "refId": "A"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "百分比",
+                "min": 0,
+                "max": 100
+              }
+            ],
+            "xAxes": [
+              {
+                "type": "time"
+              }
+            ],
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": 2,
+            "title": "内存使用率",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "(node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100",
+                "legendFormat": "内存使用率 %",
+                "refId": "A"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "百分比",
+                "min": 0,
+                "max": 100
+              }
+            ],
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 12,
+              "y": 0
+            }
+          },
+          {
+            "id": 3,
+            "title": "磁盘使用率",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "(node_filesystem_size_bytes - node_filesystem_avail_bytes) / node_filesystem_size_bytes * 100",
+                "legendFormat": "磁盘使用率 %",
+                "refId": "A"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "百分比",
+                "min": 0,
+                "max": 100
+              }
+            ],
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 0,
+              "y": 8
+            }
+          },
+          {
+            "id": 4,
+            "title": "网络流量",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(node_network_receive_bytes_total[5m])",
+                "legendFormat": "接收 {{instance}}",
+                "refId": "A"
+              },
+              {
+                "expr": "rate(node_network_transmit_bytes_total[5m])",
+                "legendFormat": "发送 {{instance}}",
+                "refId": "B"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "字节/秒",
+                "min": 0
+              }
+            ],
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 12,
+              "y": 8
+            }
+          },
+          {
+            "id": 5,
+            "title": "系统负载",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "node_load1",
+                "legendFormat": "1分钟负载",
+                "refId": "A"
+              },
+              {
+                "expr": "node_load5",
+                "legendFormat": "5分钟负载",
+                "refId": "B"
+              },
+              {
+                "expr": "node_load15",
+                "legendFormat": "15分钟负载",
+                "refId": "C"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "负载",
+                "min": 0
+              }
+            ],
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 0,
+              "y": 16
+            }
+          },
+          {
+            "id": 6,
+            "title": "进程数量",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "node_procs_running",
+                "legendFormat": "运行中进程",
+                "refId": "A"
+              },
+              {
+                "expr": "node_procs_blocked",
+                "legendFormat": "阻塞进程",
+                "refId": "B"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "进程数",
+                "min": 0
+              }
+            ],
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 12,
+              "y": 16
+            }
+          }
+        ],
+        "time": {
+          "from": "now-1h",
+          "to": "now"
+        },
+        "refresh": "10s"
+      }
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-kubernetes
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  kubernetes-overview.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "Kubernetes集群监控",
+        "tags": ["kubernetes", "monitoring"],
+        "style": "dark",
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "Pod状态分布",
+            "type": "piechart",
+            "targets": [
+              {
+                "expr": "count by (phase) (kube_pod_status_phase)",
+                "legendFormat": "{{phase}}",
+                "refId": "A"
+              }
+            ],
+            "gridPos": {
+              "h": 8,
+              "w": 6,
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": 2,
+            "title": "节点状态",
+            "type": "table",
+            "targets": [
+              {
+                "expr": "kube_node_status_condition{condition=\"Ready\"}",
+                "format": "table",
+                "refId": "A"
+              }
+            ],
+            "gridPos": {
+              "h": 8,
+              "w": 6,
+              "x": 6,
+              "y": 0
+            }
+          },
+          {
+            "id": 3,
+            "title": "Pod重启次数",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(kube_pod_container_status_restarts_total[5m])",
+                "legendFormat": "{{namespace}}/{{pod}}",
+                "refId": "A"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "重启次数/秒",
+                "min": 0
+              }
+            ],
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 12,
+              "y": 0
+            }
+          },
+          {
+            "id": 4,
+            "title": "CPU使用率（按节点）",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+                "legendFormat": "{{instance}}",
+                "refId": "A"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "百分比",
+                "min": 0,
+                "max": 100
+              }
+            ],
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 0,
+              "y": 8
+            }
+          },
+          {
+            "id": 5,
+            "title": "内存使用率（按节点）",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "(node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100",
+                "legendFormat": "{{instance}}",
+                "refId": "A"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "百分比",
+                "min": 0,
+                "max": 100
+              }
+            ],
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 12,
+              "y": 8
+            }
+          }
+        ],
+        "time": {
+          "from": "now-1h",
+          "to": "now"
+        },
+        "refresh": "10s"
+      }
+    }

@@ -1,0 +1,50 @@
+# ----- General -----
+.DS_Store
+Thumbs.db
+*.log
+logs/
+
+# ----- Environment -----
+.env
+.env.*
+!env.example
+
+# ----- Python (backend/) -----
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pytest_cache/
+.mypy_cache/
+.pytype/
+.coverage*
+htmlcov/
+.dist/
+.eggs/
+*.egg-info/
+venv/
+.virtualenv/
+.tox/
+
+# ----- Node/React (frontend/) -----
+frontend/node_modules/
+frontend/build/
+frontend/.cache/
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# ----- Docker -----
+*.pid
+# Named volumes should not be committed
+volume_*/
+
+# ----- IDE / Editors -----
+.vscode/
+.idea/
+*.iml
+
+# ----- OS files -----
+*.swp
+*.swo
+*~
