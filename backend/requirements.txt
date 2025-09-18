@@ -18,6 +18,7 @@ pydantic-settings==2.1.0
 python-multipart==0.0.6
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+email-validator==2.1.0.post1
 
 # 日志和配置
 loguru==0.7.2

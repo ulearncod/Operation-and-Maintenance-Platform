@@ -1,12 +1,14 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Layout, Menu } from 'antd';
+import { Layout, Menu, Avatar, Dropdown, Space } from 'antd';
 import {
   DashboardOutlined,
   MonitorOutlined,
   ClusterOutlined,
   AlertOutlined,
-  SettingOutlined
+  SettingOutlined,
+  UserOutlined,
+  LogoutOutlined
 } from '@ant-design/icons';
 import Dashboard from './pages/Dashboard';
 import Resources from './pages/Resources';
@@ -14,12 +16,15 @@ import Kubernetes from './pages/Kubernetes';
 import Alerts from './pages/Alerts';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import ProtectedRoute from './components/ProtectedRoute';
 import { isAuthenticated, removeToken } from './services/auth';
+import { useAuth } from './hooks/useAuth';
 
 const { Header, Sider, Content } = Layout;
 
 const App: React.FC = () => {
+  const { user, isAdmin } = useAuth();
 
   const menuItems = [
     {
@@ -100,13 +105,38 @@ const App: React.FC = () => {
             </div>
             <div style={{ color: '#666', display: 'flex', gap: 12, alignItems: 'center' }}>
               <span>v1.0.0</span>
-              {isAuthenticated() ? (
-                <button
-                  onClick={() => { removeToken(); window.location.href = '/login'; }}
-                  style={{ border: '1px solid #ddd', padding: '4px 8px', borderRadius: 4, cursor: 'pointer' }}
+              {isAuthenticated() && user ? (
+                <Dropdown
+                  menu={{
+                    items: [
+                      {
+                        key: 'user-info',
+                        label: (
+                          <div>
+                            <div><strong>{user.username}</strong></div>
+                            <div style={{ fontSize: '12px', color: '#999' }}>
+                              {user.roles?.join(', ') || 'user'}
+                            </div>
+                          </div>
+                        ),
+                        disabled: true,
+                      },
+                      { type: 'divider' },
+                      {
+                        key: 'logout',
+                        label: '退出登录',
+                        icon: <LogoutOutlined />,
+                        onClick: () => { removeToken(); window.location.href = '/login'; }
+                      }
+                    ]
+                  }}
+                  trigger={['click']}
                 >
-                  退出登录
-                </button>
+                  <Space style={{ cursor: 'pointer' }}>
+                    <Avatar size="small" icon={<UserOutlined />} />
+                    <span>{user.username}</span>
+                  </Space>
+                </Dropdown>
               ) : null}
             </div>
           </Header>
@@ -121,6 +151,7 @@ const App: React.FC = () => {
           >
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
               <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/resources" element={<ProtectedRoute><Resources /></ProtectedRoute>} />
               <Route path="/kubernetes" element={<ProtectedRoute><Kubernetes /></ProtectedRoute>} />

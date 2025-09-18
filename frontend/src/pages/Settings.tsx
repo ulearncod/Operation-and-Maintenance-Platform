@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { Card, Form, Input, Button, Switch, InputNumber, message, Divider } from 'antd';
+import api from '../services/api';
+import { useAuth } from '../hooks/useAuth';
 
 const Settings: React.FC = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const { isAdmin } = useAuth();
 
   const onFinish = (values: any) => {
     setLoading(true);
@@ -17,7 +20,7 @@ const Settings: React.FC = () => {
   return (
     <div>
       <h1 style={{ marginBottom: 24 }}>系统设置</h1>
-      
+
       <Card title="监控配置" style={{ marginBottom: 16 }}>
         <Form
           form={form}
@@ -99,6 +102,40 @@ const Settings: React.FC = () => {
           </Form.Item>
         </Form>
       </Card>
+
+      {isAdmin() && (
+        <Card title="用户管理（仅管理员）" style={{ marginBottom: 16 }}>
+        <Form
+          layout="vertical"
+          onFinish={async (values) => {
+            try {
+              await api.post('/api/v1/auth/users', values);
+              message.success('用户创建成功');
+            } catch (e: any) {
+              const detail = e?.response?.data?.detail || '创建失败';
+              if (e?.response?.status === 403) {
+                message.error('无权限：需要管理员角色');
+              } else {
+                message.error(detail);
+              }
+            }
+          }}
+        >
+          <Form.Item label="用户名" name="username" rules={[{ required: true, message: '请输入用户名' }]}>
+            <Input allowClear />
+          </Form.Item>
+          <Form.Item label="邮箱" name="email" rules={[{ type: 'email', message: '请输入正确的邮箱' }]}>
+            <Input allowClear />
+          </Form.Item>
+          <Form.Item label="初始密码" name="password" rules={[{ required: true, message: '请输入初始密码' }]}>
+            <Input.Password />
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit">创建用户</Button>
+          </Form.Item>
+        </Form>
+      </Card>
+      )}
 
       <Card title="系统信息">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>

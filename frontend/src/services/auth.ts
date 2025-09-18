@@ -28,3 +28,7 @@ export async function login(username: string, password: string): Promise<void> {
   });
   setToken(res.data?.access_token);
 }
+
+export async function register(username: string, password: string, email?: string): Promise<void> {
+  await axios.post('/api/v1/auth/register', { username, password, email });
+}
