@@ -1,0 +1,38 @@
+global:
+  smtp_smarthost: 'localhost:587'
+  smtp_from: 'alertmanager@devops-platform.com'
+
+route:
+  group_by: ['alertname']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'web.hook'
+
+receivers:
+- name: 'web.hook'
+  webhook_configs:
+  - url: 'http://monitoring-service:8000/api/v1/alerts/webhook'
+    send_resolved: true
+
+- name: 'email'
+  email_configs:
+  - to: 'admin@devops-platform.com'
+    subject: '[ALERT] {{ .GroupLabels.alertname }}'
+    html: |
+      <h2>告警通知</h2>
+      <p><strong>告警名称:</strong> {{ .GroupLabels.alertname }}</p>
+      <p><strong>时间:</strong> {{ .StartsAt }}</p>
+      {{ range .Alerts }}
+      <hr>
+      <p><strong>实例:</strong> {{ .Labels.instance }}</p>
+      <p><strong>摘要:</strong> {{ .Annotations.summary }}</p>
+      <p><strong>描述:</strong> {{ .Annotations.description }}</p>
+      {{ end }}
+
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'dev', 'instance']
