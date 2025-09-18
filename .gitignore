@@ -48,3 +48,4 @@ volume_*/
 *.swp
 *.swo
 *~
+docker_backup_*/
